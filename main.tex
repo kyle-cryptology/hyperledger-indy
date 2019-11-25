@@ -1,0 +1,64 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+% \usepackage[linesnumbered,boxed]{algorithm2e}
+
+\include{commands}
+
+\begin{document}
+\title{Cryptography of Hyperledger Indy}
+\author{Kyle Huang}
+\maketitle
+
+\section{Primary Credemtial (CL-Signature) Paramters}
+Issuer generates the key pair $(P_{k}, s_{k})$ through algorithm \ref{alg:pcsetup}; creates the proof $\mc{P}_{1}$ with algorithm \ref{alg:pcproof}; and the holder verifies the correctness of $P_{k}$ (via proof $\mc{P}_{1}$) through algorithm \ref{alg:pcverify}.
+
+\begin{algorithm}
+\caption{Primary Credemtial Paramters Setup}
+\label{alg:pcsetup}
+\hspace*{\algorithmicindent} \textbf{Input}: None
+\begin{algorithmic}
+	\State $p',q'\lar \binbits{1536}$
+	\Comment{$p'$ and $q'$ are prime; $|p'|=|q'|=1536$}
+	\State $p\la 2p'+1$, $q\la 2q'+1$, $n\la pq$
+	\Comment{$p$ and $q$ are prime}
+	\State $t\lar \mbz{n}$, $\equivmod{S}{t^2}{n}$
+	\State $x_{z}, \group{x_{R_i}}{i}{[1,l]} \lar \mbz{p'q'}$
+	\State $Z\la S^{x_{z}}, \group{R_{i}\la S^{x_{R_{i}}}}{i}{[1,l]}\pmod{n}$
+	\State $P_k\la (n, S, Z, \group{R_i}{i}{[1,l]})$, $s_k\la(p,q)$
+	\State \Return $(P_{k}, s_{k})$
+\end{algorithmic}
+\end{algorithm}
+
+
+\begin{algorithm}
+\caption{Primary Credemtial Paramters Correctness Proof}
+\label{alg:pcproof}
+\hspace*{\algorithmicindent} \textbf{Input}: $P_{k}$
+\begin{algorithmic}
+	\State $\td{x}_Z,\group{\td{x}_{R_{i}}}{i}{[1,l]}\lar \mbz{p'q'}$
+	\State $\td{Z}\la S^{\td{x}_{z}}, \group{\td{R}_i\la S^{\td{x}_{R_{i}}}}{i}{[1,l]}\pmod{n}$
+	\State $c\la H_{1}(Z||\td{Z}||\group{R_i,\td{R}_i}{i}{[1,l]})$
+	\Comment $H_1$ is by default SHA2-256
+	\State $\hat{x}_{z}\la \td{x}_{z} + c\cdot x_{z}, \group{\hat{x}_{R_{i}}\la \td{x}_{R_{i}} + c\cdot x_{R_{i}}}{i}{[1,l]}$
+	\State $\mc{P}_{1}\la (c, \hat{x}_{z}, \group{ \hat{x}_{R_{i}}}{i}{[1,l]})$
+	\State \Return $\mc{P}_{1}$
+\end{algorithmic}
+\end{algorithm}
+
+
+\begin{algorithm}
+\caption{Primary Credemtial Paramters Verification}
+\label{alg:pcverify}
+\hspace*{\algorithmicindent} \textbf{Input}: $P_{k}, \mc{P}_{1}$
+\begin{algorithmic}
+	\State $\td{Z}\la Z^{-c}S^{\hat{x}_{z}}, \group{\td{R}_{i}\la R_{i}^{-c}S^{\hat{x}_{R_{i}}}}{i}{[1,l]}\pmod{n}$
+	\State \Return $c==H_{1}(Z||\td{Z}||\group{R_i,\td{R}_i}{i}{[1,l]})$
+\end{algorithmic}
+\end{algorithm}
+
+\section{Non-Revocation Credential Parameters Setup}
+
+\end{document}
