@@ -17,22 +17,38 @@
 
 \newcommand{\td}[1]{\tilde{#1}}
 
+\newcommand{\true}{\texttt{True}}
+\newcommand{\false}{\texttt{False}}
+
 % Sets
+\newcommand{\cp}{(\group{m_i}{i}{(\ak \cup \ah )}, A, e, v)}
+\newcommand{\cnr}{(I_{A}, \sigma , c, s, wit_{i}, g_i, g'_i, i)}
 \newcommand{\pk}{(n, S, Z, \group{R_i}{i}{[1,l]})}
 \newcommand{\pr}{(h, h_0, h_1, h_2, \td{h}, \hat{h}, u, pk, y)}
 \newcommand{\pl}{(c, \hat{x}_{z}, \group{ \hat{x}_{r_{i}}}{i}{[1,l]})}
+\newcommand{\pa}{(z, \group{g_{i}, g'_{i}}{i}{[1, 2L] \backslash \{L + 1\}})}
 \newcommand{\ph}{(U, c, \hat{v}', \group{m_{i}}{i}{\ah},n_{1}, U_{r})}
-\newcommand{\issuehp}{issue_{h}(\mc{S}, \ah, \group{m_i}{i}{\ah}, n_0, \mc{H}, P_{k}, P_{r})}
+\newcommand{\ppc}{(\group{m_i}{i}{\ak }, A, e, v'', s_{e}, c')}
+\newcommand{\pnr}{(I_{A}, \sigma , c, s'', wit_{i}, g_i, g'_i, i)}
+\newcommand{\issuelp}{issue_{1}(\mc{S}, \ah, \group{m_i}{i}{\ah}, n_0, \mc{H}, P_{k}, P_{r})}
+\newcommand{\issuetp}{issue_{2}(i, \mc{H}, \mc{V}, acc, \group{m_i}{i}{\ak }, \keypair{k}, \keypair{r}, \keypair{a}, P_{h})}
+\newcommand{\issuethp}{issue_{3}(P_{k}, \keypair{h}, P_{PC}, P_{NR})}
+\newcommand{\sh}{(v', s')}
+\newcommand{\verifyph}{verify_{P_{h}}(P_{k}, P_{h})}
+\newcommand{\verifypnr}{verify_{P_{NR}}(acc, \mc{H}, s_{h}, P_{r}, P_{NR})}
+\newcommand{\witi}{(\sigma _{i}, u_{i}, g_{i}, w, \mc{V})}
+
 
 % Equations
 \newcommand{\equivmod}[3]{#1\la #2\pmod{#3}}
 \newcommand{\group}[3]{\{#1\}_{\forall #2\in #3}}
 \newcommand{\keypair}[1]{P_{#1}, s_{#1}}
 \newcommand{\keypairv}[3]{P_{#1}\la {#2}\mbox{, }s_{#1}\la {#3}}
-\newcommand{\pairing}[3]{e(#1\mbox{, }#2)^{#3}}
+\newcommand{\pairing}[2]{e(#1\mbox{, }#2)}
+\newcommand{\pairingexp}[3]{\pairing{#1}{#2}^{#3}}
 \newcommand{\prodi}[3]{\prod _{#1\in #2}#3}
 \newcommand{\randexp}[4]{#1\lar \mbz{#2}\mbox{, }#3\la #4^{#1}}
 \newcommand{\randexpm}[5]{\randexp{#1}{#2}{#3}{#4}\pmod{#5}}
 \newcommand{\zkp}[2]{\hat{#1}_{#2}\la \td{#1}_{#2} + c\cdot #1_{#2}}
-\newcommand{\zkv}[5]{\td{#1}_{#2}\la #1_{#2}^{-c}#3^{\hat{#4}{#5}}}
+\newcommand{\zkv}[6]{\td{#1}_{#2}\la #1_{#2}^{-#3}#4^{\hat{#5}{#6}}}
 
