@@ -2,9 +2,17 @@
 % Symbols
 \newcommand{\ah}{\mc{A}_{h}}
 \newcommand{\ak}{\mc{A}_{k}}
+\newcommand{\ahk}{\ah \cup \ak}
 
-\newcommand{\bin}{\{0, 1\}}
-\newcommand{\binbits}[1]{\{0, 1\}^{#1}}
+\newcommand{\bin}{\set{0, 1}}
+\newcommand{\binbits}[1]{\bin ^{#1}}
+
+\newcommand{\ep}[1]{epoch_{#1}}
+\newcommand{\epv}{\ep{V}}
+\newcommand{\epp}{(V,\accv )}
+
+\newcommand{\gllij}{g'_{L + 1 + i - j}}
+\newcommand{\gllj}{g'_{L + 1 - j}}
 
 \newcommand{\la}{\leftarrow}
 \newcommand{\lar}{\leftarrow _{R}}
@@ -14,39 +22,92 @@
 \newcommand{\mbz}[1]{\mb{Z}_{#1}^{*}}
 
 \newcommand{\mc}[1]{\mathcal{#1}}
+\newcommand{\mch}{\mc{H}}
+\newcommand{\mt}[1]{\mathtt{#1}}
 
+\newcommand{\old}[1]{{#1}^{old}}
+
+\newcommand{\set}[1]{\{{#1}\}}
+\newcommand{\range}[1]{[{#1}]}
+\newcommand{\rgp}[1]{\range{1, {#1}}}
+\newcommand{\rgpl}{\rgp{l}}
+
+\newcommand{\st}[1]{state_{#1}}
+\newcommand{\stv}{\st{V}}
 \newcommand{\td}[1]{\tilde{#1}}
+
+\newcommand{\vi}{V\cup \set{i}}
 
 \newcommand{\true}{\texttt{True}}
 \newcommand{\false}{\texttt{False}}
 
-% Sets
-\newcommand{\cp}{(\group{m_i}{i}{(\ak \cup \ah )}, A, e, v)}
-\newcommand{\cnr}{(I_{A}, \sigma , c, s, wit_{i}, g_i, g'_i, i)}
-\newcommand{\pk}{(n, S, Z, \group{R_i}{i}{[1,l]})}
-\newcommand{\pr}{(h, h_0, h_1, h_2, \td{h}, \hat{h}, u, pk, y)}
-\newcommand{\pl}{(c, \hat{x}_{z}, \group{ \hat{x}_{r_{i}}}{i}{[1,l]})}
-\newcommand{\pa}{(z, \group{g_{i}, g'_{i}}{i}{[1, 2L] \backslash \{L + 1\}})}
-\newcommand{\ph}{(U, c, \hat{v}', \group{m_{i}}{i}{\ah},n_{1}, U_{r})}
-\newcommand{\ppc}{(\group{m_i}{i}{\ak }, A, e, v'', s_{e}, c')}
-\newcommand{\pnr}{(I_{A}, \sigma , c, s'', wit_{i}, g_i, g'_i, i)}
-\newcommand{\issuelp}{issue_{1}(\mc{S}, \ah, \group{m_i}{i}{\ah}, n_0, \mc{H}, P_{k}, P_{r})}
-\newcommand{\issuetp}{issue_{2}(i, \mc{H}, \mc{V}, acc, \group{m_i}{i}{\ak }, \keypair{k}, \keypair{r}, \keypair{a}, P_{h})}
-\newcommand{\issuethp}{issue_{3}(P_{k}, \keypair{h}, P_{PC}, P_{NR})}
-\newcommand{\sh}{(v', s')}
-\newcommand{\verifyph}{verify_{P_{h}}(P_{k}, P_{h})}
-\newcommand{\verifypnr}{verify_{P_{NR}}(acc, \mc{H}, s_{h}, P_{r}, P_{NR})}
-\newcommand{\witi}{(\sigma _{i}, u_{i}, g_{i}, w, \mc{V})}
+\newcommand{\ski}{sk_{I}}
+\newcommand{\pki}{pk_{I}}
+
+\newcommand{\accv}{acc_{V}}
+\newcommand{\accvi}{acc_{\vi}}
+
+\newcommand{\cp}{C_{P}}
+\newcommand{\cpp}{(\group{m_i}{i}{(\ahk )}, A, e, v)}
+\newcommand{\cnr}{C_{NR}}
+\newcommand{\cnrp}{(I_{A}, \sigma , c, s, \witi , g_i, g'_i, i)}
+\newcommand{\cpnr}{\cp , \cnr }
+
+\newcommand{\pk}{P_{k}}
+\newcommand{\pkp}{(n, S, Z, \group{R_i}{i}{\rgpl })}
+\newcommand{\pr}{P_{r}}
+\newcommand{\prp}{(h, h_0, h_1, h_2, \td{h}, pk, \hat{h}, u, y, z)}
+\newcommand{\pl}{\mc{P}_{1}}
+\newcommand{\plp}{(c, \hat{x}_{z}, \group{ \hat{x}_{r_{i}}}{i}{\rgpl })}
+\newcommand{\pkip}{(\pk , \pl , \pr )}
+
+\newcommand{\rc}{R_{c}}
+\newcommand{\rcp}{(\group{m_i}{i}{\ak }, A, e, v'', s_{e}, c')}
+\newcommand{\rr}{R_{r}}
+\newcommand{\rrp}{(I_{A}, \sigma , c, s'', \witi , g_{i}, g'_{i}, i)}
+
+\newcommand{\reqp}{(U, c, \hat{v}', \group{m_{i}}{i}{\ah},n_{1}, U_{r})}
+\newcommand{\resp}{(\accv ,\mc{H}, \rc , \rr )}
+
+\newcommand{\stp}{(V, \stpp}
+\newcommand{\stpp}{\group{g_{i}, g'_{i}}{i}{\rgp{2L} \backslash \set{L + 1}})}
+
+\newcommand{\setup}{\mt{setup}}
+\newcommand{\setupi}{\setup(l, L)}
+\newcommand{\setupp}{(\keypair{I}, \stv , \epv )}
+
+\newcommand{\cdt}{\mt{credential}}
+\newcommand{\crreq}{\cdt _{req}}
+\newcommand{\crreqp}{\crreq (\mc{S}, \ah, \group{m_i}{i}{\ah}, n_0, \mc{H}, \pki )}
+\newcommand{\crres}{\cdt _{res}}
+\newcommand{\crresp}{\crres (i, \old{\stv }, \mc{H}, \group{m_i}{i}{\ak }, \ski , req)}
+\newcommand{\crrespp}{(res , \stv ,\epv )}
+\newcommand{\crfinishp}{\cdt _{finish}(\pki , \vs , req, res)}
+
+\newcommand{\vs}{(v', s')}
+
+\newcommand{\proofp}{\mt{proof}(\cpnr ,\pki )}
+
+\newcommand{\vrf}{\mt{verify}}
+\newcommand{\verifyph}{\vrf _{req}(\pki , req)}
+\newcommand{\verifyrnr}{\vrf _{\rr }(\accv, \mc{H}, \vs , \pki , \rr )}
+\newcommand{\verifycon}{\vrf _{credential}(proof, \epv )}
+
+\newcommand{\witi}{wit_{i}}
+\newcommand{\witip}{(\sigma _{i}, u_{i}, g_{i}, w, V)}
+
+\newcommand{\commitp}{(C, D, A, \mc{G}, \mc{W}, \mc{S}, \mc{U})}
+\newcommand{\openerp}{(c, \rho , \group{m_{j}}{j}{\ah}, r, s, open, open', mult, mult', tmp, tmp', r', r'', r''')}
 
 
 % Equations
 \newcommand{\equivmod}[3]{#1\la #2\pmod{#3}}
-\newcommand{\group}[3]{\{#1\}_{\forall #2\in #3}}
-\newcommand{\keypair}[1]{P_{#1}, s_{#1}}
-\newcommand{\keypairv}[3]{P_{#1}\la {#2}\mbox{, }s_{#1}\la {#3}}
+\newcommand{\group}[3]{\set{#1}_{\forall #2\in #3}}
+\newcommand{\keypair}[1]{sk_{#1}, pk_{#1}}
+\newcommand{\keypairv}[3]{sk_{#1}\la {#2}\mbox{, }pk_{#1}\la {#3}}
 \newcommand{\pairing}[2]{e(#1\mbox{, }#2)}
 \newcommand{\pairingexp}[3]{\pairing{#1}{#2}^{#3}}
-\newcommand{\prodi}[3]{\prod _{#1\in #2}#3}
+\newcommand{\prodi}[3]{\prod _{\forall #1\in #2}#3}
 \newcommand{\randexp}[4]{#1\lar \mbz{#2}\mbox{, }#3\la #4^{#1}}
 \newcommand{\randexpm}[5]{\randexp{#1}{#2}{#3}{#4}\pmod{#5}}
 \newcommand{\zkp}[2]{\hat{#1}_{#2}\la \td{#1}_{#2} + c\cdot #1_{#2}}

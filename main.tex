@@ -23,9 +23,9 @@
 \section{Syntax of Hyperledger Indy}
 The first four steps are similar to the register operation, and the last four steps look like login.\footnote{All content refers to \href{https://hyperledger-indy.readthedocs.io/projects/hipe/en/latest/text/0109-anoncreds-protocol/README.html}{Hyperledger Indy HIPE}.}
 \begin{enumerate}
-\item Issuer determines a credential schema $\mc{S}$: the type of cryptographic signatures used to sign the credentials, the number $l$ of attributes in a credential, the indices $\ah \subset [1, l] = \{1, 2, ..., l\}$ of hidden attributes, the public key $P_{k}$, the non-revocation credential attribute number $l_{r}$ and non-revocation public key $P_{r}$. Then he publishes it on the ledger and announces the attribute semantics.
+\item Issuer determines a credential schema $\mc{S}$: the type of cryptographic signatures used to sign the credentials, the number $l$ of attributes in a credential, the indices $\ah \subset \rgpl = \{1, 2, ..., l\}$ of hidden attributes, the public key $\pk $, the non-revocation credential attribute number $l_{r}$ and non-revocation public key $\pr $. Then he publishes it on the ledger and announces the attribute semantics.
 \item Holder retrieves the credential schema from the ledger and sets the hidden attributes.
-\item Holder requests a credential from issuer. He sends hidden attributes in a blinded form to issuer and agrees on the values of known attributes $\ak \la [1, l] \backslash \ah $.
+\item Holder requests a credential from issuer. He sends hidden attributes in a blinded form to issuer and agrees on the values of known attributes $\ak \la \rgpl \backslash \ah $.
 \item Issuer returns a credential pair $(C_{p}, C_{NR})$ to holder. The first credential contains the requested $l$ attributes. The second credential asserts the non-revocation status of the first one. Issuer publishes the non-revoked status of the credential on the ledger.
 \item Holder approaches verifier. Verifier sends the Proof Request $\mc{E}$ to holder. The Proof Request contains the credential schema $\mc{S}_{E}$ and disclosure predicates $\mc{D}$. The predicates for attribute $m$ and value $V$ can be of form $m=V$, $m<V$, or $m>V$. Some attributes may be asserted to be the same: $m_{i}=m_{j}$.
 \item Holder checks that the credential pair he holds satisfies the schema $\mc{S}_{E}$. He retrieves the non-revocation witness from the ledger.
@@ -50,200 +50,275 @@ The first four steps are similar to the register operation, and the last four st
  $l_{a}$ & Message length for all attributes. In Sovrin, $l_{a}=256$. \\
  $(\ak, \ah)$ & The indices of \textbf{known attributes} and \textbf{hidden attributes} respectively.  \\
  & By default, $\{1, 3\}\subset \ah$ and $\{2\}\subset \ak $. \\
- $(P_{k}, P_{r})$ & Public keys of \textbf{primary credentials} and \textbf{non-revocation credentials} resp.\\
- $\mc{P}_{1}$ & Correctness proof of $P_{k}$. \\
- $(i, \mc{H})$ & The \textbf{index} and \textbf{identifier} of a holder in the issuer's view. \\
- $(\mc{V}, acc)$ & The \textbf{indices} and \textbf{accumulator} of the current non-revocation list.\\ 
+ $(\pk , \pr )$ & Public keys of \textbf{primary credentials} and \textbf{non-revocation credentials} resp.\\
+ $\pl $ & Correctness proof of $\pk $. \\
+ $(i, \mch )$ & The \textbf{index} and \textbf{identifier} of a holder in the issuer's view. \\
+ $(V, \accv)$ & The \textbf{indices} and \textbf{accumulator} of the current non-revocation list.\\ 
  $(C_{P}, C_{NR})$ & The \textbf{primary credential} and the \textbf{non-revocation credential}.\\ \hline
 \end{tabular}
 \caption{Symbol table}
 \label{table:symbol}
 \end{table}
 \clearpage
-\section{Environment setup}
-Issuer generates the key pair $(\keypair{k})$ and a proof $\mc{P}_{1}$ through $setup_{PC}(l)$ (Algorithm \ref{alg:pcsetup}), as well as the non-revocation key pair $(\keypair{r})$ through $setup_{NR}()$ (Algorithm \ref{alg:nrsetup}); then, he keeps $(s_{k}, s_{r})$ secret and publishes $(\mc{S}, \ah , l_{r}, P_{k}, P_{r}, \mc{P}_{1})$ to the ledger. Everyone can verify the correctness of $P_{k}$ (via proof $\mc{P}_{1}$) through $verify_{P_{k}}(l, P_{k}, \mc{P}_{1})$ (Algorithm \ref{alg:pcverify}).
 
-\subsection{Primary Credential (CL-Signature)}
+\section{Practical construction}
+\subsection{Overview}
+\begin{enumerate}
+	\item $\setupp\la \setupi$
+	\item $\mt{obtainCert}(\mc{U}(pk_I, \ah, \group{m_{j}}{j}{\ah }), \mc{I}(\ski, \ak, \group{m_{j}}{j}{\ak }, \old{\stv }, \old{\epv },i))$
+	\begin{enumerate}
+		\item Update $\ep{\vi } $ on the ledger.
+		\item Holder $\mc{U}$ acqires credentials $(C_{P}, C_{NR}, \witi )$ where $C_{P}\la \mt{sign}(\ski, \group{m_{j}}{j}{\ahk })$ and $C_{NR}\la \mt{sign}(\ski, (\vi ))$.
+	\end{enumerate}
+	\item $\epv \la \mt{updateEpoch}()$ \# By verifier. In our case, $\epv $ is on the ledger so everyone can check.
+	\item $\witi \la \mt{updateWitness}(\mc{U}(\old{\witi }), \mc{I}(\stv ))$
+	\item $\true /\false \la \mt{verify}(\mc{U}(C_{P}, C_{NR}, \witi ), \mc{V}(\epv))$
+\end{enumerate}
 
 \begin{algorithm}
-\caption{$setup_{PC}(l)$}
-\label{alg:pcsetup}
+\caption{$\setupi$}
+\label{alg:setup}
 \begin{algorithmic}
+	\State \Comment For primary credential
 	\State $p',q'\lar \binbits{1536}$
 	\Comment{$p'$ and $q'$ are prime; $|p'|=|q'|=1536$}
 	\State $p\la 2p'+1$; $q\la 2q'+1$; $n\la pq$
 	\Comment{$p$ and $q$ are prime}
 	\State $t\lar \mbz{n}$; $\equivmod{S}{t^2}{n}$
 	\State $\randexpm{x_{z}}{p'q'}{Z}{S}{n}$
-	\State $\group{\randexpm{x_{r_i}}{p'q'}{R_{i}}{S}{n}}{i}{[1,l]}$
+	\State $\group{\randexpm{x_{r_i}}{p'q'}{R_{i}}{S}{n}}{i}{\rgpl }$
 	\State $\keypairv{k}{\pk}{(p,q)}$
 	\State $\randexpm{\td{x}_{z}}{p'q'}{\td{Z}}{S}{n}$
-	\Comment correctness proof from here.
-	\State $\group{\randexpm{\td{x}_{r_i}}{p'q'}{\td{R}_{i}}{S}{n}}{i}{[1,l]}$
-	\State $c\la H_{1}(Z||\td{Z}||\group{R_i,\td{R}_i}{i}{[1,l]})$
+	\State \Comment The proof of correctness for $\pk $
+	\State $\group{\randexpm{\td{x}_{r_i}}{p'q'}{\td{R}_{i}}{S}{n}}{i}{\rgpl }$
+	\State $c\la H_{1}(Z||\td{Z}||\group{R_i,\td{R}_i}{i}{\rgpl })$
 	\Comment $H_1$ is by default SHA2-256
-	\State $\zkp{x}{z}$; $\group{\zkp{x}{r_{i}}}{i}{[1,l]}$
-	\State $\mc{P}_{1}\la \pl$
-	\State \Return $(\keypair{k}, \mc{P}_{1})$
-\end{algorithmic}
-\end{algorithm}
-
-\begin{algorithm}
-\caption{$verify_{P_{k}}(l, P_{k}, \mc{P}_{1})$}
-\label{alg:pcverify}
-\begin{algorithmic}
-	\State $\pk \la P_{k}$; $\pl \la \mc{P}_{1}$
-	\State $\zkv{Z}{}{c}{S}{x}{_{z}}$; $\group{\zkv{R}{i}{c}{S}{x}{_{r_{i}}}}{i}{[1,l]}\pmod{n}$
-	\State \Return $c==H_{1}(Z||\td{Z}||\group{R_i,\td{R}_i}{i}{[1,l]})$
-\end{algorithmic}
-\end{algorithm}
-
-\subsection{Non-Revocation Credential}
-\begin{algorithm}
-\caption{$setup_{NR}()$}
-\label{alg:nrsetup}
-\begin{algorithmic}
+	\State $\zkp{x}{z}$; $\group{\zkp{x}{r_{i}}}{i}{\rgpl }$
+	\State $\pl \la \plp$
+	\State \Comment For non-revocation credential
 	\State $\mbg{1}\times \mbg{2} \rightarrow \mbg{T}$
 	\Comment pick a type-III pairing where $|\mbg{1}|=|\mbg{2}|=|\mbg{T}|=q$
 	\State $g\lar \mbg{1}$; $g'\lar \mbg{2}$
 	\State $h, h_0, h_1, h_2, \td{h}\lar \mbg{1}$; $u, \hat{h}\lar \mbg{2}$
-	\State $\randexp{sk}{q}{pk}{g}$; $\randexp{x}{q}{y}{\hat{h}}$
-	\State $\keypairv{r}{\pr}{(sk, x)}$
-	\State \Return $(\keypair{r})$
+	\State $sk, x, r \lar \mbz{q} $; $pk \la g^{sk}$; $y \la \hat{h}^{x}$
+	\State \Comment accumulator settings
+	\State $z\la \pairingexp{g}{g'}{r^{L + 1}}$; $V\la \emptyset$; $\accv \la 1$
+	\State $\stv \la \stp $; $\epv \la \epp $
+	\State $\pr \la \prp $
+	\State $\keypairv{I}{(p, q, sk, x, r)}{\pkip }$
+	\State \Return $\setupp $
 \end{algorithmic}
 \end{algorithm}
-\subsection{CKS Accumulator}
-Issuer creates a new accumulator using $setup_{Acc}(L, P_{r})$ (Algorithm \ref{alg:nracc}).
+
 \begin{algorithm}
-\caption{$setup_{Acc}(L, P_{r})$}
-\label{alg:nracc}
+\caption{$\mt{verify}_{\pk }(l, \pk , \pl )$}
+\label{alg:verifypk}
 \begin{algorithmic}
-	\State $r\lar \mbz{q}$; $\group{g_{i}\la g^{r^{i}}, g'_{i}\la g'^{r^{i}}}{i}{[1, 2L] \backslash \{L + 1\}}$
-	\State $z\la \pairingexp{g}{g'}{r^{L + 1}}$; $V\la \emptyset$; $acc\la 1$
-	\State $\keypairv{a}{\pa }{r}$
-	\State \Comment issuer publishes $(P_{a}, \mc{V})$ on the ledger with identifier $ID_{a} \la z$.
-	\State \Return $(\keypair{a}, \mc{V}, acc)$
+	\State $\pkp \la \pk $; $\plp \la \pl $
+	\State $\zkv{Z}{}{c}{S}{x}{_{z}}$; $\group{\zkv{R}{i}{c}{S}{x}{_{r_{i}}}}{i}{\rgpl }\pmod{n}$
+	\State \Return $c==H_{1}(Z||\td{Z}||\group{R_i,\td{R}_i}{i}{\rgpl })$
 \end{algorithmic}
 \end{algorithm}
 
+\subsection{Setup}
+Issuer generates the key pair $(\keypair{I})$, $\stv $ and $\epv $ through $\setup$ (Algorithm \ref{alg:setup}); then, he keeps $(\ski, \stv )$ in a secret manner and publishes $(\mc{S}, \ah , l_{r}, \pki, \epv )$ to the ledger. Let $\pkip \la \pki$, everyone can verify the correctness of $\pk $ through $\mt{verify}_{\pk }(l, \pk , \pl )$ (Algorithm \ref{alg:verifypk}).
+\begin{equation}
+	\setupp \la \setupi
+\end{equation}
 
 
-\section{Credential Issuance}
-Let $i<L$ and $\mc{H}$ be the index and identifier of the holder in the issuer's system, respectively. The holder acquires the schema $\mc{S}$, indices $\ah$ and public keys $(P_{k}, P_{r})$ from the ledger in addition to a random number $n_0$ and the identifier $\mc{H}$ from the issuer; then he sets the hidden attribute $\group{m_i}{i}{\ah}$. The credential issuance process is interactive, which follows: 
+
+\subsection{Credential Issuance}
+\begin{align*}
+	(\cpnr, \stv, \epv, \witi )&\la \mt{ObtainCert}(\mc{U}(pk_I, \ah, \group{m_{j}}{j}{\ah }), \\
+	&\mc{I}(\ski, \ak, \group{m_{j}}{j}{\ak }, \old{\stv }, \old{\epv },i))
+\end{align*}
+
+
+Let $i<L$ and $\mch $ be the index and identifier of the holder in the issuer's system, respectively. The holder acquires the schema $\mc{S}$, indices $\ah$ and public keys $\pki$ from the ledger in addition to a random number $n_0$ and the identifier $\mch $ from the issuer; then he sets the hidden attribute $\group{m_i}{i}{\ah}$. The credential issuance process is interactive, which follows: 
 \begin{enumerate}
-	\item The holder computes a temporary result $(\keypair{h})$ by excuting (Algorithm \ref{alg:ci1issue}) $\issuelp$; then, he keeps $s_{h}$ private and sends $(P_{h}, \group{m_i}{i}{\ak })$ to the issuer.
-	\item On receiving $(P_{h}, \group{m_i}{i}{\ak })$ from the holder, the issuer firstly verifies $P_{h}$ through $\verifyph $ (Algorithm \ref{alg:phverify}). If it passes, the issuer fetches the current non-revoked indices $\mc{V}$ and accumulator $acc$ on the ledger, and runs $\issuetp$ (Algorithm \ref{alg:ci2}) to generate $(P_{PC}, P_{NR}, \mc{V}, acc)$. Finally, the issuer stores the holder’s information and index $i$ in issue’s local database; then, he updates $acc$ and $\mc{V}$ on the ledger and returns $(P_{PC}, P_{NR})$ to the holder.
-	\item While receiving $(P_{PC}, P_{NR})$ from the issuer, the holder firstly runs Algorithm \ref{alg:pnrverify} to verify $P_{NR}$. If $\true \la \verifypnr $, the holder excutes Algorithm \ref{alg:ci3} $\issuethp$ to do more verifications. If all verification pass, the holder keeps the returned credential $(C_{P}, C_{NR})$.
+	\item The holder requests a credential query $req$ by excuting Algorithm \ref{alg:req}, $\crreq$; then, he keeps $\vs  $ private and sends $req$ to the issuer.
+	\begin{equation}
+		(req, \vs) \la \crreqp
+	\end{equation}
+	\item On receiving $req$ from the holder, the issuer firstly verifies $req$ through $\verifyph $ (Algorithm \ref{alg:verifyreq}). If it passes, the issuer runs Algorithm \ref{alg:res}, $\crresp$, to generate parameters $\crrespp $. Finally, the issuer stores the holder’s information and index $i$ in issue’s local database, updates its own $\stv$; then, he updates $\epv$ on the ledger and returns $res$ to the holder.
+	\begin{displaymath}
+		\crrespp \la 
+	\end{displaymath}
+	\begin{equation}
+		\crresp
+	\end{equation}
+	\item While receiving response $res$ from the issuer, the holder excutes Algorithm \ref{alg:ci3} $\crfinishp$ to do some verifications. If all verifications pass, the holder keeps returned credential $(\cpnr )$ and witness $\witi $.
+	\begin{equation}
+		 (\cpnr )\la \crfinishp
+	\end{equation}
 \end{enumerate}
 
 \begin{algorithm}
-\caption{$\issuelp$}
-\label{alg:ci1issue}
+\caption{$\crreqp$}
+\label{alg:req}
 \begin{algorithmic}
-	\State $\group{\td{m}_i\lar \binbits{593}}{i}{\ah}$
-	\Comment primary credential
+	\State \Comment primary credential
+	\State $\group{\td{m}_i\lar \binbits{593}}{i}{\ah}$; $\pkip \la \pki$
 	\State $v'\lar \binbits{3152}$; $\td{v}'\lar \binbits{3488}$
-	\State $\pk \la P_{k}$
+	\State $\pkp \la \pk $
 	\State $U\la S^{v'}\prodi{i}{\ah}{R_{i}^{m_{i}}}$; $\td{U}\la S^{\td{v}'}\prodi{i}{\ah}{R_{i}^{\td{m}_{i}}}$
 	\State $c = H(U||\td{U}||n_{0})$; $n_1\lar \binbits{80}$
 	\State $\zkp{v}{}$; $\group{\zkp{m}{i}}{i}{\ah}$
-	\State $\pr \la P_{r}$
-	\Comment non-revocation credential
+	\State \Comment non-revocation credential
+	\State $\prp \la \pr $
 	\State $\randexp{s'}{q}{U_{r}}{h_{2}}$
-	\State $\keypairv{h}{\ph }{\sh }$
-	\State \Return $(\keypair{h})$
+	\State $req \la \reqp  $
+	\State \Return $(req, \vs )$
 \end{algorithmic}
 \end{algorithm}
 
 \begin{algorithm}
 \caption{$\verifyph$}
-\label{alg:phverify}
+\label{alg:verifyreq}
 \begin{algorithmic}
-	\State $\pk \la P_{k}$; $\ph \la P_{h}$
+	\State $\pkip \la \pki $
+	\State $\pkp \la \pk $; $\reqp  \la req$
 	\State $\zkv{U}{}{c}{S}{v}{'}\prodi{i}{\ah}{S^{\hat{m}_{i}}R_{i}^{-c}}\pmod{n}$
 	\State \Return $c == H(U||\td{U}||n_{0})$
 \end{algorithmic}
 \end{algorithm}
 
 \begin{algorithm}
-\caption{$\issuetp$}
-\label{alg:ci2}
+\caption{$\crresp$}
+\label{alg:res}
 \begin{algorithmic}
-	\State $m_{2}\la H(i||\mc{H})$
-	\Comment the primary credential
-	% \State \Comment store holder's information and $i$ in issue's local database
+	\State \Comment primary credential
+	\State $\pkip \la \pki $; $m_{2}\la H(i||\mch )$
+	\Comment $\mch $ is the identifier of holder, like ID
 	\State $v''\la \binbits{2723}$; $e''\la \binbits{596}$
 	\Comment $|v''|= 2723$, $|e| = 596$ and $e$ is prime
-	\State $\pk \la P_{k}$; $\ph \la P_{h}$
-	\State $Q\la Z(US^{v''}\prodi{i}{\ak}{R_{i}^{m_{i}}})^{-1}\pmod{n}$; $r\lar \mbz{p'q'}$
-	\State $A\la Q^{e^{-1}\pmod{p'q'}}$; $\hat{A}\la Q^{r}\pmod{n}$
-	\State $c'\la H(Q||A||\hat{A}||n_{1})$; $s_{e}\la r -c'e^{-1}$
-	\State $P_{PC}\la \ppc$
-	\State $s'', c\lar \mbz{q}$
-	\Comment non-revocation credential
-	\State $\pr \la P_{r}$, $(sk, x)\la s_{r}$
-	\State $\pa \la P_{a}$, $r\la s_{a}$
+	\State $\pkp \la \pk $; $\reqp  \la req$
+	\State $Q\la Z(US^{v''}\prodi{i}{\ak}{R_{i}^{m_{i}}})^{-1}\pmod{n}$; $r'\lar \mbz{p'q'}$
+	\State $A\la Q^{e^{-1}\pmod{p'q'}}$; $\hat{A}\la Q^{r'}\pmod{n}$
+	\State $c'\la H(Q||A||\hat{A}||n_{1})$; $s_{e}\la r' -c'e^{-1}$
+	\State $\rc \la \rcp$
+	\State \Comment non-revocation credential
+	\State $s'', c\lar \mbz{q}$; $(\old{V}, \stpp )\la \old{\stv }$
+	\State $\prp \la \pr $, $(sk, x, r)\la \ski $
 	\State $\sigma \la (h_{0}h_{1}^{m_{2}}U_{r}g_{i}h_{2}^{s''})^{(x+c)^{-1}}$; $\sigma _{i} \la g'^{(sk + r^{i})^{-1}}$; $u_{i}\la u^{r^{i}}$
-	\State $w\la \prodi{j}{\mc{V}}{g'_{L+1+i-j}}$; $\mc{V}\la \mc{V}\cup \{i\}$, $acc\la acc\cdot g'_{L+1-i}$
-	\State $wit_{i}\la \witi $
-	% \Comment publish $(acc, \mc{V})$ on the ledger
-	\State $P_{NR}\la \pnr$
-	\State \Return $(P_{PC}, P_{NR}, \mc{V}, acc)$
+	\State $w\la \prodi{j}{V, j\neq i}{\gllij }$; $V\la \old{V}\cup \{i\}$, $\accv \la \prodi{i}{V} \gllj$
+	\State $\witi \la \witip $; $\rr \la \rrp $
+	\State $res \la \resp $
+	\State $\stv \la \stp $; $\epv \la \epp $
+	\State \Return $\crrespp $
 \end{algorithmic}
 \end{algorithm}
 
 \begin{algorithm}
-\caption{$\verifypnr $}
-\label{alg:pnrverify}
-\begin{algorithmic}
-	\State $\pr \la P_{r}$; $\pnr \la P_{NR}$
-	\State $\witi \la wit_{i}$; $\sh \la s_{h}$
-	\State $s\la s' + s''$; $m_2\la H(i||\mc{H})$
-	\If{$\pairing{g_{i}}{acc}(\pairing{g}{w})^{-1}\neq z$}
-		\State $\mbox{    }$\Return \false
-	\ElsIf{$\pairing{pk\cdot g_{i}}{\sigma _{i}}\neq \pairing{g}{g'}$}
-		\State $\mbox{    }$\Return \false
-	\ElsIf{$\pairing{\sigma }{y\cdot \hat{h}^{c}}\neq \pairing{h_{0}h_{1}^{m_{2}}h_{2}^{s}\cdot g_{i}}{\hat{h}}$}
-		\State $\mbox{    }$\Return \false
-	\Else 
-		\State $\mbox{    }$\Return \true
-	\EndIf
-\end{algorithmic}
-\end{algorithm}
-
-\begin{algorithm}
-\caption{$\issuethp $}
+\caption{$\crfinishp $}
 \label{alg:ci3}
 \begin{algorithmic}
-	\State $\pk \la P_{k}$; $\ph \la P_{h}$
-	\State $\ppc \la P_{PC}$; $\pnr \la P_{NR}$
-	\If{$e$ is not prime OR $e\not \in [2^{596}, 2^{596} + 2^{119}]$}
-		\State $\mbox{    }$\Return \textbf{null}
-	\EndIf
-	\State $\sh \la s_{h}$; $v\la v' + v''$; $s\la s' + s''$
+	\State $\pkip \la \pki $; $\pkp \la \pk $; 
+	\State $\prp \la \pr $
+	\State $\reqp \la req$; $\resp \la res$
+	\State $\rcp \la \rc $; $\rrp \la \rr $
+	\State $\witip \la \witi$; $m_2\la H(i||\mch )$
+	\State $v\la v' + v''$; $s\la s' + s''$
 	\State $Q\la Z(S^{v}\prodi{i}{(\ak \cup \ah)}{R_{i}^{m_{i}}})^{-1}\pmod{n}$
-	\If{$Q\neq A^{e}$}
-		\State $\mbox{    }$\Return \textbf{null}
-	\EndIf
 	\State $\hat{A}\la A^{c'+s_{e}\cdot e}$
-	\If{$c'\neq H(Q||A||\hat{A}||n_{1})$}
-		\State $\mbox{    }$\Return \textbf{null}
-	\Else \State $C_{P}\la \cp$; $C_{NR}\la \cnr$
-	\State \Return $(C_{P}, C_{NR})$
+	\If{$\pairing{g_{i}}{\accv }(\pairing{g}{w})^{-1}\neq z$}
+		\State \Return \textbf{null}
+	\ElsIf{$\pairing{pk\cdot g_{i}}{\sigma _{i}}\neq \pairing{g}{g'}$}
+		\State \Return \textbf{null}
+	\ElsIf{$\pairing{\sigma }{y\cdot \hat{h}^{c}}\neq \pairing{h_{0}h_{1}^{m_{2}}h_{2}^{s}\cdot g_{i}}{\hat{h}}$}
+		\State \Return \textbf{null}
+	\ElsIf{$e$ is not prime OR $e\not \in [2^{596}, 2^{596} + 2^{119}]$}
+		\State \Return \textbf{null}
+	\ElsIf{$Q\neq A^{e}$}
+		\State \Return \textbf{null}
+	\ElsIf{$c'\neq H(Q||A||\hat{A}||n_{1})$}
+		\State \Return \textbf{null}
+	\Else \State $\cp \la \cpp$; $\cnr \la \cnrp$
+	\State \Return $(\cpnr )$
 	\EndIf
 \end{algorithmic}
 \end{algorithm}
 
-\section{Credential Revocation}
-The revocation process is quite straightforward. The issuer fetches the current non-revoked indices $\mc{V}$ and accumulator $acc$ on the ledger. Then, he revokes user with index $i$ via Algorithm \ref{alg:revoke} and updates $(\mc{V}', acc')$ on the ledger after running $(\mc{V}', acc')\la revoke(\mc{V}, acc, i)$. 
+\subsection{Credential Revocation}
+The revocation process is quite straightforward. The issuer fetches the current $\old{\epv }$ from the ledger. Then, he revokes user with index $i$ via Algorithm \ref{alg:revoke} and updates $\epv $ and $\stv$ on the ledger and in its private database, respectively, after running $(\stv ,\epv )\la \mt{revoke}(\old{\epv}, i)$. 
 
 \begin{algorithm}
-\caption{$revoke(\mc{V}, acc, i)$}
+\caption{$\mt{revoke}(\old{\stv}, \old{\epv }, i)$}
 \label{alg:revoke}
 \begin{algorithmic}
-	\State $\mc{V} \la \mc{V} \backslash \{i\}$
-	\State $acc \la acc \cdot (g'_{L+1-i})^{-1}$
-	\State \Return $(\mc{V}, acc)$
+	\State $(\old{V}, \stpp )\la \old{\stv }$; $(\old{V}, \old{\accv })\la \old{\epv }$
+	\State $V \la \old{V} \backslash \{i\}$; $\accv \la \old{\accv }\cdot (\gllj)^{-1}$
+	\State $\stv \la (V, \stpp)$;  $\epv \la (V, \accv )$
+	\State \Return $(\stv ,\epv )$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Epoch update}
+The epoch update is omitted since the epoch is stored on the ledger in Hyperledger Indy so that each node synchronizes the last version of epoch.
+
+\subsection{Witness update}
+While a verifier touches a holder to issue a zero-knowledge proof, the first step of the holder is to update his witness by requesting $\old{\witi }$ to the issuer; and the issuer computes and returns through $\mt{WitnessUpdate}$ (Algorithm \ref{alg:witupdate}).
+
+\begin{algorithm}
+\caption{$\mt{updateWitness}(\old{\witi }, \stv)$}
+\label{alg:witupdate}
+\begin{algorithmic}
+	\State $(\sigma _{i}, u_{i}, g_{i}, \old{w}, \old{V})\la \old{\witi }$; $\stp \la \stv$
+	\State $w \la \old{w} \prodi{j}{V \backslash \old{V}}\gllij / \prodi{j}{\old{V} \backslash V}\gllij $
+	\State $\witi \la (\sigma _{i}, u_{i}, g_{i}, w, V)$
+	\State \Return $\witi $
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Credential verification}
+After updating the witness, the holder generates a $proof\la \proofp $ (algorithm \ref{alg:proof}). Let $(commit, opener)\la proof$ be the generated proof, the holder sends $commit$ to the verifier first, after confirmation from the verifier, the holder sends $opener$ to the verifier to open the aforementioned $commit$; and the verifier is convinced if algorithm \ref{alg:verifycre} returns $\true \la \verifycon $.
+
+\begin{algorithm}
+\caption{$\proofp $}
+\label{alg:proof}
+\begin{algorithmic}
+	\State $\cpp \la \cp$; $\cnrp \la \cnr$
+	\State $\witip \la \witi $; $\pkip \la \pki $
+	\State $\prp \la \pr $; $\rho , r, r', r'', r''', \lar \mbz{q}$
+	\State $mult\la c\rho $; $tmp\la c \cdot open$; $mult'\la r''\cdot r$; $tmp'\la r'' \cdot open$
+	\State $C\la h^{\rho }\td{h}^{open}$; $D\la g^{r}\td{h}^{open'}$; $A\la \sigma \td{h}^{\rho }$; $\mc{G}\la g_{i}\td{h}^{r}$
+	\State $\mc{W}\la wg'^{r'}$; $\mc{S}\la \sigma _{i}g'^{r''}$; $\mc{U}\la u_{i}g'^{r'''}$
+	\State $commit\la \commitp $ 
+	\State $opener\la \openerp $
+	\State $proof\la (commit, opener)$
+	\State \Return $proof$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{$\verifycon $}
+\label{alg:verifycre}
+\begin{algorithmic}
+	\State $(commit, opener) \la proof$; $\commitp \la commit$
+	\State $\openerp \la opener $
+	\State $\epp \la \epv $
+	\State $X_{1}\la \pairing{h_{0}\cdot \prodi{j}{\ak}{h_{j}^{m_{j}}}\cdot \mc{G}}{\hat{h}}$
+	\State $X_{2}\la \pairing{A}{y\hat{h}^{c}}\pairing{\td{h}}{\hat{h}^{r-mult}y^{-\rho }}$
+	\If{$C\neq h^{\rho }\td{h}^{open}$}
+		\State \Return $\false$
+	\ElsIf{$1\neq C^{c}h^{-mult}\td{h}^{-tmp}$}
+		\State \Return $\false$
+	\ElsIf{$X_{1}\neq X_{2}\cdot \prodi{j}{\ah}{\pairingexp{h_{j}}{\hat{h}}{-m_{j}}}\cdot \pairingexp{h_{l+1}}{\hat{h}}{-s}$}
+		\State \Return $\false$
+	\ElsIf{$\pairing{\mc{G}}{\accv}\neq \pairing{g}{\mc{W}}\cdot z\cdot \pairingexp{\td{h}}{\accv }{r}\pairingexp{g^{-1}}{g'}{r'}$}
+		\State \Return $\false$
+	\ElsIf{$D\neq g^{r}\td{h}^{open'}$}
+		\State \Return $\false$
+	\ElsIf{$1\neq D^{r''}g^{-mult'}\td{h}^{-tmp'}$}
+		\State \Return $\false$
+	\ElsIf{$\pairing{pk\cdot \mc{G}}{\mc{S}}\neq \pairing{g}{g'}\pairingexp{pk\cdot \mc{G}}{g'}{r''}\pairingexp{\td{h}}{g'}{-mult'}\pairingexp{\td{h}}{\mc{S}}{r}$}
+		\State \Return $\false$
+	\ElsIf{$\pairing{\mc{G}}{u}\neq \pairing{g}{\mc{U}}\pairingexp{\td{h}}{u}{r}\pairingexp{g^{-1}}{g'}{r'''}$}
+		\State \Return $\false$
+	\Else
+		\State \Return $\true$
+	\EndIf
 \end{algorithmic}
 \end{algorithm}
 
