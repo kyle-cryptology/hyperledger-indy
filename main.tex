@@ -87,9 +87,9 @@ The first four steps are similar to the register operation, and the last four st
 	\State $t\lar \mbz{n}$; $\equivmod{S}{t^2}{n}$
 	\State $\randexpm{x_{z}}{p'q'}{Z}{S}{n}$
 	\State $\group{\randexpm{x_{r_i}}{p'q'}{R_{i}}{S}{n}}{i}{\rgpl }$
-	\State $\keypairv{k}{\pk}{(p,q)}$
-	\State $\randexpm{\td{x}_{z}}{p'q'}{\td{Z}}{S}{n}$
+	\State $\pk \la \pkp $
 	\State \Comment The proof of correctness for $\pk $
+	\State $\randexpm{\td{x}_{z}}{p'q'}{\td{Z}}{S}{n}$
 	\State $\group{\randexpm{\td{x}_{r_i}}{p'q'}{\td{R}_{i}}{S}{n}}{i}{\rgpl }$
 	\State $c\la H_{1}(Z||\td{Z}||\group{R_i,\td{R}_i}{i}{\rgpl })$
 	\Comment $H_1$ is by default SHA2-256
