@@ -31,6 +31,7 @@
 \newcommand{\range}[1]{[{#1}]}
 \newcommand{\rgp}[1]{\range{1, {#1}}}
 \newcommand{\rgpl}{\rgp{l}}
+\newcommand{\rgptlml}{(\rgp{2L}\backslash \set{L+1})}
 
 \newcommand{\st}[1]{state_{#1}}
 \newcommand{\stv}{\st{V}}
@@ -56,7 +57,7 @@
 \newcommand{\pk}{P_{k}}
 \newcommand{\pkp}{(n, S, Z, \group{R_i}{i}{\rgpl })}
 \newcommand{\pr}{P_{r}}
-\newcommand{\prp}{(h, h_0, h_1, h_2, \td{h}, pk, \hat{h}, u, y, z)}
+\newcommand{\prp}{(h, h_0, h_1, h_2, \td{h}, \hat{h}, u, pk, y, z)}
 \newcommand{\pl}{\mc{P}_{1}}
 \newcommand{\plp}{(c, \hat{x}_{z}, \group{ \hat{x}_{r_{i}}}{i}{\rgpl })}
 \newcommand{\pkip}{(\pk , \pl , \pr )}
@@ -66,11 +67,11 @@
 \newcommand{\rr}{R_{r}}
 \newcommand{\rrp}{(I_{A}, \sigma , c, s'', \witi , g_{i}, g'_{i}, i)}
 
-\newcommand{\reqp}{(U, c, \hat{v}', \group{m_{i}}{i}{\ah},n_{1}, U_{r})}
+\newcommand{\reqp}{(U, c, \hat{v}', \group{\hat{m}_{i}}{i}{\ah},n_{1}, U_{r})}
 \newcommand{\resp}{(\accv ,\mc{H}, \rc , \rr )}
 
-\newcommand{\stp}{(V, \stpp}
-\newcommand{\stpp}{\group{g_{i}, g'_{i}}{i}{\rgp{2L} \backslash \set{L + 1}})}
+\newcommand{\stp}{(V, \stpp )}
+\newcommand{\stpp}{\group{g_{i}, g'_{i}}{i}{\rgptlml}}
 
 \newcommand{\setup}{\mt{setup}}
 \newcommand{\setupi}{\setup(l, L)}

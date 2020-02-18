@@ -103,6 +103,7 @@ The first four steps are similar to the register operation, and the last four st
 	\State $sk, x, r \lar \mbz{q} $; $pk \la g^{sk}$; $y \la \hat{h}^{x}$
 	\State \Comment accumulator settings
 	\State $z\la \pairingexp{g}{g'}{r^{L + 1}}$; $V\la \emptyset$; $\accv \la 1$
+	\State $\group{g_i\la g^{r^{i}}, g'_i\la g'^{r^{i}}}{i}{\rgptlml}$
 	\State $\stv \la \stp $; $\epv \la \epp $
 	\State $\pr \la \prp $
 	\State $\keypairv{I}{(p, q, sk, x, r)}{\pkip }$
@@ -191,19 +192,26 @@ Let $i<L$ and $\mch $ be the index and identifier of the holder in the issuer's 
 	\State \Comment primary credential
 	\State $\pkip \la \pki $; $m_{2}\la H(i||\mch )$
 	\Comment $\mch $ is the identifier of holder, like ID
-	\State $v''\la \binbits{2723}$; $e''\la \binbits{596}$
-	\Comment $|v''|= 2723$, $|e| = 596$ and $e$ is prime
 	\State $\pkp \la \pk $; $\reqp  \la req$
-	\State $Q\la Z(US^{v''}\prodi{i}{\ak}{R_{i}^{m_{i}}})^{-1}\pmod{n}$; $r'\lar \mbz{p'q'}$
-	\State $A\la Q^{e^{-1}\pmod{p'q'}}$; $\hat{A}\la Q^{r'}\pmod{n}$
-	\State $c'\la H(Q||A||\hat{A}||n_{1})$; $s_{e}\la r' -c'e^{-1}$
+	\State $\td{U}\la (U^{-c}S^{\hat{v}'})\prodi{i}{\ah}{R_{i}^{\hat{m}_{i}}}$, $(p, q, sk, x, r)\la \ski $
+	\If{$c\neq H(U||\td{U}||n_{0})$}
+		\State \Comment And some confusing length verifications for $\hat{v}',\group{\hat{m}_{i}, \hat{r}_{i}}{i}{\ah}$ 
+		\State \textbf{exit}
+	\EndIf
+	\State $v''\la \binbits{2724}$; $e\la 2^{596} + \binbits{119}$
+	\Comment $|v''|= 2724$ and $e$ is prime
+	\State $Q\la Z(US^{v''}\prodi{i}{\ak}{R_{i}^{m_{i}}})^{-1}\pmod{n}$
+	\State $A\la Q^{e^{-1}\pmod{p'q'}}$; $r\lar \mbz{p'q'}$; $\hat{A}\la Q^{r}\pmod{n}$
+	\State $c'\la H(Q||A||\hat{A}||n_{1})$; $s_{e}\la r -c'e^{-1}\pmod{p'q'}$
 	\State $\rc \la \rcp$
 	\State \Comment non-revocation credential
 	\State $s'', c\lar \mbz{q}$; $(\old{V}, \stpp )\la \old{\stv }$
-	\State $\prp \la \pr $, $(sk, x, r)\la \ski $
+	\State $\prp \la \pr $
+	\Comment $i$: the index of user on accumerlator
 	\State $\sigma \la (h_{0}h_{1}^{m_{2}}U_{r}g_{i}h_{2}^{s''})^{(x+c)^{-1}}$; $\sigma _{i} \la g'^{(sk + r^{i})^{-1}}$; $u_{i}\la u^{r^{i}}$
-	\State $w\la \prodi{j}{V, j\neq i}{\gllij }$; $V\la \old{V}\cup \{i\}$, $\accv \la \prodi{i}{V} \gllj$
+	\State $w\la \prodi{j}{V, j\neq i}{\gllij }$; $V\la \old{V}\cup \set{i}$, $\accv \la \prodi{j}{V} \gllj$
 	\State $\witi \la \witip $; $\rr \la \rrp $
+	\State \Comment $I_{A}$: identifier of accumerlator
 	\State $res \la \resp $
 	\State $\stv \la \stp $; $\epv \la \epp $
 	\State \Return $\crrespp $
